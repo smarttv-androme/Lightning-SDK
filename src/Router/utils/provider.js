@@ -18,8 +18,7 @@
  */
 
 import { symbols, getQueryStringParams } from './helpers'
-import { app, routes, routeExists, setPreviousState } from './router'
-import { getValuesFromHash } from './route'
+import { app, routes, routeExists, setPreviousState, routeMatcher } from './router'
 import emit from './emit'
 
 export const dataHooks = {
@@ -61,7 +60,7 @@ const execProvider = (request, emitProvided) => {
 }
 
 export const addPersistData = ({ page, route, hash, register = new Map() }) => {
-  const urlValues = getValuesFromHash(hash, route.path)
+  const urlValues = routeMatcher.getParametersFromHash(hash, route.path)
   const queryParams = getQueryStringParams(hash)
   const pageData = new Map([...urlValues, ...register])
   const params = {}

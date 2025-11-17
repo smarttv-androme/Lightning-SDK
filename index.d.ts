@@ -36,7 +36,7 @@ export const Pin: any; // export { default as Pin } from './src/Pin'
 export const Profile: any; // export { default as Profile } from './src/Profile'
 export const Purchase: any; // export { default as Purchase } from './src/Purchase'
 export const Registry: any; // export { default as Registry } from './src/Registry'
-export { default as Router } from './src/Router/index.js';
+export { default as Router, RouterConfig, RouteMatchingStrategy } from './src/Router/index.js';
 export const Settings: any; // export { default as Settings } from './src/Settings'
 export const Storage: any; // export { default as Storage } from './src/Storage'
 export const TV: any; // export { default as TV } from './src/TV'

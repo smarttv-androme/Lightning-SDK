@@ -1,6 +1,6 @@
 {
   "name": "@lightningjs/sdk",
-  "version": "5.5.5",
+  "version": "5.5.7",
   "license": "Apache-2.0",
   "types": "index.d.ts",
   "scripts": {
@@ -54,9 +54,9 @@
   },
   "repository": {
     "type": "git",
-    "url": "git@github.com:rdkcentral/Lightning-SDK.git"
+    "url": "git@github.com:smarttv-androme/Lightning-SDK.git"
   },
   "bugs": {
-    "url": "https://github.com/rdkcentral/Lightning-SDK/issues"
+    "url": "https://github.com/smarttv-androme/Lightning-SDK/issues"
   }
 }

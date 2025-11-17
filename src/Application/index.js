@@ -101,7 +101,7 @@ export default function(App, appData, platformSettings) {
   return class Application extends Lightning.Application {
     constructor(options) {
       const config = Deepmerge(defaultOptions, options, {
-        isMergeableObject: isPlainObject
+        isMergeableObject: isPlainObject,
       })
 
       super(config)

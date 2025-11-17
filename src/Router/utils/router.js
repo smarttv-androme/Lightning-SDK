@@ -28,7 +28,7 @@ import {
   cleanHash,
 } from './helpers'
 import { step, navigateQueue } from '../index'
-import { createRoute, getOption } from './route'
+import { createRoute, defaultRouteMatcher, getOption } from './route'
 import { createComponent } from './components'
 import Log from '../../Log'
 import { isWildcard, stripRegex } from './regex'
@@ -111,8 +111,14 @@ export let beforeEachRoute = async (from, to)=>{
 export let afterEachRoute = () => {}
 
 /**
+ *
+ * @type {RouteMatchingStrategy}
+ */
+export let routeMatcher = defaultRouteMatcher
+
+/**
  * All configured routes
- * @type {Map<string, object>}
+ * @type {Map<string, Route>}
  */
 export let routes = new Map()
 
@@ -239,6 +245,9 @@ const init = config => {
   }
   if (isFunction(config.afterEachRoute)) {
     afterEachRoute = config.afterEachRoute
+  }
+  if (config.routeMatchingStrategy) {
+    routeMatcher = config.routeMatchingStrategy
   }
   if (config.bootComponent) {
     console.warn(
@@ -489,8 +498,4 @@ export const getBootRequest = () => {
 
 export const getRouterConfig = () => {
   return routerConfig
-}
-
-export const getRoutes = () => {
-  return routes
 }

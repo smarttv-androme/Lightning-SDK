@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-export default (file) => {
+export default file => {
   return new Promise((resolve, reject) => {
     var xhr = new XMLHttpRequest()
     xhr.onreadystatechange = function() {

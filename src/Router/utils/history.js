@@ -17,8 +17,8 @@
  * limitations under the License.
  */
 
-import { getActiveHash, getActivePage } from './router'
-import { getOption, getRouteByHash } from './route'
+import { getActiveHash, getActivePage, routeMatcher, routes } from './router'
+import { getOption } from './route'
 import { isFunction, isObject, isArray, isBoolean, symbols } from './helpers'
 import { getRouterConfig } from './router'
 
@@ -40,7 +40,7 @@ export const updateHistory = request => {
   const forceNavigateStore = register.get(symbols.store)
 
   // test preventStorage on route configuration
-  const activeRoute = getRouteByHash(hash)
+  const activeRoute = routeMatcher.getRouteByHash(routes, hash)
   const preventStorage = getOption(activeRoute.options, 'preventStorage')
 
   // we give prio to navigate storage flag

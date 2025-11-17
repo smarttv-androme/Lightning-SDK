@@ -16,7 +16,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { Lightning, Utils } from "../../index.js";
+import { Lightning } from "../../index.js";
 import { RoutedApp } from "./base";
 import Request from "./model/Request";
 import Route from "./model/Route.js";
@@ -123,6 +123,11 @@ export interface RouterPlatformSettings {
   autoRestoreRemote?: boolean;
 }
 
+export interface RouteMatchingStrategy {
+  getRouteByHash(routes: Map<string, Route>, hash: string): Route | boolean;
+  getParametersFromHash(hash: string, route: string): Map<string, string>;
+}
+
 /**
  * Router config
  */
@@ -197,6 +202,11 @@ interface Config {
    * for more information.
    */
   afterEachRoute?(request: Request): void;
+
+  /**
+   * A user-configurable strategy for matching hashes with routes
+   */
+  routeMatchingStrategy?: RouteMatchingStrategy;
 
   /**
    * @deprecated
@@ -1065,4 +1075,4 @@ declare namespace Router {
         CustomType | null | undefined;
 }
 
-export default Router;
+export { Router as default, Config as RouterConfig };

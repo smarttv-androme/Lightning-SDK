@@ -18,7 +18,7 @@
  */
 
 import { hasRegex, hasLookupId, isNamedGroup, stripRegex } from './regex'
-import { routes, routeExists, bootRequest, getRoutes } from './router'
+import { routeExists, bootRequest } from './router'
 import Request from '../model/Request'
 import Route from '../model/Route'
 import { objectToQueryString, isObject, isString } from './helpers'
@@ -34,10 +34,11 @@ export const getFloor = route => {
 
 /**
  * return all stored routes that live on the same floor
- * @param floor
+ * @param routes {Map<string, Route>}
+ * @param floor {number}
  * @returns {Array}
  */
-const getRoutesByFloor = floor => {
+const getRoutesByFloor = (routes, floor) => {
   const matches = []
   // simple filter of level candidates
   for (let [route] of routes.entries()) {
@@ -52,16 +53,17 @@ const getRoutesByFloor = floor => {
  * return a matching route by provided hash
  * hash: home/browse/12 will match:
  * route: home/browse/:categoryId
+ * @param routes {Map<string, Route>}
  * @param hash {string}
- * @returns {boolean|{}} - route
+ * @returns {boolean|Route} - route
  */
-export const getRouteByHash = hash => {
+const getRouteByHash = (routes, hash) => {
   // @todo: clean up on handleHash
   hash = hash.replace(/^#/, '')
 
   const getUrlParts = /(\/?:?[^/]+)/g
   // grab possible candidates from stored routes
-  const candidates = getRoutesByFloor(getFloor(hash))
+  const candidates = getRoutesByFloor(routes, getFloor(hash))
   // break hash down in chunks
   const hashParts = hash.match(getUrlParts) || []
 
@@ -88,7 +90,7 @@ export const getRouteByHash = hash => {
 
     const routeParts = route.match(getUrlParts) || []
 
-    for (let i = 0, j = routeParts.length; i < j; i++) {
+    for (let i = 0; i < routeParts.length; i++) {
       const routePart = routeParts[i]
       const hashPart = hashParts[i]
 
@@ -145,7 +147,12 @@ export const getRouteByHash = hash => {
   return false
 }
 
-export const getValuesFromHash = (hash = '', path) => {
+/**
+ * @param hash {string}
+ * @param path {string}
+ * @return {Map<string, string>}
+ */
+const getValuesFromHash = (hash = '', path) => {
   // replace the regex definition from the route because
   // we already did the matching part
   path = stripRegex(path, '')
@@ -211,11 +218,16 @@ export const createRequest = (url, args, store) => {
   return new Request(url, args, store)
 }
 
-export const getHashByName = obj => {
+/**
+ * @param routes {Map<string, Route>}
+ * @param obj
+ * @return {string|boolean}
+ */
+export const getHashByName = (routes, obj) => {
   if (!obj.to && !obj.name) {
     return false
   }
-  const route = getRouteByName(obj.to || obj.name)
+  const route = getRouteByName(routes, obj.to || obj.name)
   const hasDynamicGroup = /\/:([\w-]+)\/?/
   let hash = route
 
@@ -235,7 +247,12 @@ export const getHashByName = obj => {
   return hash
 }
 
-const getRouteByName = name => {
+/**
+ * @param routes {Map<string, Route>}
+ * @param name
+ * @return {string|boolean}
+ */
+const getRouteByName = (routes, name) => {
   for (let [path, route] of routes.entries()) {
     if (route.name === name) {
       return path
@@ -244,9 +261,14 @@ const getRouteByName = name => {
   return false
 }
 
-export const keepActivePageAlive = (route, request) => {
+/**
+ * @param routes {Map<string, Route>}
+ * @param route {string|Route}
+ * @param request
+ * @return {V|*|boolean}
+ */
+export const keepActivePageAlive = (routes, route, request) => {
   if (isString(route)) {
-    const routes = getRoutes()
     if (routes.has(route)) {
       route = routes.get(route)
     } else {
@@ -264,4 +286,12 @@ export const keepActivePageAlive = (route, request) => {
   }
 
   return false
+}
+
+/**
+ * @type {RouteMatchingStrategy}
+ */
+export const defaultRouteMatcher = {
+  getParametersFromHash: getValuesFromHash,
+  getRouteByHash: getRouteByHash,
 }

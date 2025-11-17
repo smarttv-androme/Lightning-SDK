@@ -45,18 +45,13 @@ import {
   getActiveHash,
   getActiveRoute,
   deleteCurrentInstance,
+  routeMatcher,
+  routes,
 } from './utils/router'
 
 import { focusWidget, getActiveWidget, restoreFocus } from './utils/widgets'
 import { getHistory, setHistory, getHistoryState, replaceHistoryState } from './utils/history'
-import {
-  createRequest,
-  getRouteByHash,
-  getValuesFromHash,
-  getFloor,
-  getHashByName,
-  keepActivePageAlive,
-} from './utils/route'
+import { createRequest, getFloor, getHashByName, keepActivePageAlive } from './utils/route'
 import { load } from './utils/loader'
 import { stripRegex, isWildcard } from './utils/regex'
 import { RoutedApp } from './base'
@@ -125,7 +120,7 @@ const start = () => {
 
   if (routeExists(bootKey)) {
     if (hash && !isDirectLoad) {
-      if (!getRouteByHash(hash)) {
+      if (!routeMatcher.getRouteByHash(routes, hash)) {
         navigate('*', { failedHash: hash })
         return
       }
@@ -167,7 +162,7 @@ const handleBootError = e => {
  */
 export const navigate = (url, args = {}, store) => {
   if (isObject(url)) {
-    url = getHashByName(url)
+    url = getHashByName(routes, url)
     if (!url) {
       return
     }
@@ -236,7 +231,7 @@ const handleHashChange = async override => {
     request = queue(hash)
   }
 
-  const route = getRouteByHash(hash)
+  const route = routeMatcher.getRouteByHash(routes, hash)
 
   if (!route) {
     if (routeExists('*')) {
@@ -300,7 +295,7 @@ const resolveHashChange = request => {
     const component = getComponent(route.path)
     // if a hook is provided for the current route
     if (isFunction(route.hook)) {
-      const urlParams = getValuesFromHash(hash, route.path)
+      const urlParams = routeMatcher.getParametersFromHash(hash, route.path)
       const params = {}
       for (const key of urlParams.keys()) {
         params[key] = urlParams.get(key)
@@ -312,7 +307,7 @@ const resolveHashChange = request => {
       // force page to root state to prevent shared state issues
       const activePage = getActivePage()
       if (activePage) {
-        const keepAlive = keepActivePageAlive(getActiveRoute(), request)
+        const keepAlive = keepActivePageAlive(routes, getActiveRoute(), request)
         if (activePage && route.path === getActiveRoute() && !keepAlive) {
           activePage._setState('')
         }
@@ -384,7 +379,7 @@ export const step = (level = 0) => {
         hash = hash.replace(hashLastPart, '')
         // if we have a configured route
         // we navigate to it
-        if (getRouteByHash(hash)) {
+        if (routeMatcher.getRouteByHash(routes, hash)) {
           return navigate(hash, { [symbols.backtrack]: true }, false)
         }
       }
@@ -518,7 +513,7 @@ const root = () => {
   }
 }
 
-const deletePage = (param) => {
+const deletePage = param => {
   deleteCurrentInstance(param)
 }
 
