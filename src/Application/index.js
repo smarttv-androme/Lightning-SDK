@@ -156,6 +156,8 @@ export default function(App, appData, platformSettings) {
         .then(() => {
           Metrics.app.loaded()
 
+          this.loadFontMetrics()
+
           this.w = this.config.stage.w / this.config.stage.precision
           this.h = this.config.stage.h / this.config.stage.precision
 
@@ -233,6 +235,12 @@ export default function(App, appData, platformSettings) {
       return platformSettings.fontLoader && typeof platformSettings.fontLoader === 'function'
         ? platformSettings.fontLoader(fonts, customFontFaces)
         : fontLoader(fonts, customFontFaces)
+    }
+
+    loadFontMetrics() {
+      // Added in @lightningjs/core v2.11.1
+      const fontMetrics = App.getFontMetrics && App.getFontMetrics()
+      if (fontMetrics) this.stage.fontMetrics = fontMetrics
     }
 
     cleanupFonts() {
