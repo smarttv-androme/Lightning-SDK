@@ -1,6 +1,6 @@
 {
   "name": "@lightningjs/sdk",
-  "version": "5.5.9",
+  "version": "5.5.10",
   "license": "Apache-2.0",
   "types": "index.d.ts",
   "scripts": {
@@ -25,7 +25,7 @@
   },
   "dependencies": {
     "@babel/polyfill": "^7.11.5",
-    "@lightningjs/core": "https://github.com/smarttv-androme/Lightning/releases/download/v2.11.2/lightningjs-core-2.11.2.tgz",
+    "@lightningjs/core": "https://github.com/smarttv-androme/Lightning/releases/download/v2.11.2/lightningjs-core-2.11.3.tgz",
     "@metrological/sdk": "^1.0.2",
     "@michieljs/execute-as-promise": "^1.0.0",
     "deepmerge": "^4.2.2",
