@@ -242,6 +242,16 @@ const handleHashChange = async override => {
     return
   }
 
+  // this exact request is already being processed (or has already been
+  // resolved) - a second, concurrent handleHashChange() for the same
+  // in-flight hash (e.g. a duplicate hashchange event) must not run the
+  // same request through the pipeline again, it should simply no-op and
+  // let the original, still in-flight request finish on its own
+  if (request.isDispatched) {
+    return
+  }
+  request.isDispatched = true
+
   // update current processed request
   request.hash = hash
   request.route = route

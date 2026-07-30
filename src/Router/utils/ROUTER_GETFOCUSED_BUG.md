@@ -20,7 +20,7 @@ is returning a page that `Router` itself already removed from `Pages`.
 
 The Router processes navigations as `Request` objects that move through
 `navigate()` → `queue()` → `handleHashChange()` → `resolveHashChange()` → `load()` → `loader()`
-→ `onRequestResolved()` (all in `../index.js` and ``).
+→ `onRequestResolved()` (all in `../index.js`, `router.js` and `loader.js`).
 
 Two things combine to cause the crash:
 
@@ -76,6 +76,42 @@ throws here, it becomes an unhandled rejection and `navigateQueue.delete(queueId
 The queue entry leaks, `Router.isNavigating()` stays `true` forever, and further navigation to
 that hash keeps hitting the same stale request.
 
+### The double-dispatch causes more than the crash
+
+After fix 1 (below) stopped the crash, we kept seeing a related symptom: the Router reports a
+page as active and attached, but the page's `visible` property stays `false`, so nothing renders.
+
+The cause is the same double-dispatch, hitting a different call site. A component is always
+created with `visible: false` (`components.js`); the only thing that flips it to `true` is
+`executeTransition(pageIn, pageOut)` in `transition.js`, called from `loader.js`:
+
+```js
+if (!request.isSharedInstance && !request.isCancelled) {
+  await executeTransition(request.page, getActivePage())
+}
+```
+
+For a page's first-ever visit, `isSharedInstance` stays `false` on *both* concurrent dispatches
+(that flag is only ever set in the "reuse an existing instance" branch of `loader()`, which a
+fresh construction never takes), so both dispatches reach this line and call
+`executeTransition` with the same `request.page`. Whichever dispatch gets there **second** now
+sees `getActivePage()` already pointing at that very page — because the first dispatch already
+ran `onRequestResolved()` → `setActivePage(page)` before the second one arrives. The default
+(no custom transition) branch of `executeTransition` is:
+
+```js
+pageIn.visible = true
+if (pageOut) {
+  pageOut.visible = false
+}
+```
+
+With `pageIn === pageOut`, the final assignment wins: the page ends up `visible: false` while
+still fully attached, tracked, and focusable — no crash (fix 1 also keeps `cleanUp` from
+touching it), just nothing on screen. This is hard evidence that the double-dispatch itself was
+still happening after fix 1 — fix 1 only closed the one place (`cleanUp`) where the stale
+second resolve was destructive enough to throw.
+
 ## Possible fixes
 
 1. **Guard `cleanUp` against removing the page you're about to activate**
@@ -83,12 +119,17 @@ that hash keeps hitting the same stale request.
    not the same instance as the page being activated. Minimal, safe, no behavioral side
    effects — it stops the crash at its actual trigger point.
 
-2. **Make `queue()` cancel-and-replace instead of silently no-op'ing** when a hash is already
-   in flight (`../index.js`). This prevents the same `Request` object from ever being
-   driven through `load()`/`loader()` twice concurrently — the real root cause, not just the
-   crash symptom. It also incidentally fixes the `has()` vs `decodeURIComponent()` key
-   mismatch. This is a larger, deliberate behavior change (a repeat navigation to an in-flight
-   hash now restarts instead of being dropped), so it needs a bit more soak time.
+2. **Stop the same `Request` from ever being driven through `load()`/`loader()` twice**, so
+   `handleHashChange()` re-entering for a hash that's already in flight is a true no-op rather
+   than a second dispatch. This is the real root cause, not just the crash symptom — it also
+   prevents the invisible-page bug above and the duplicate side effects (double
+   `afterEachRoute`/page-view tracking, a duplicate data-provider network call, a duplicate
+   component instance left orphaned in `Pages`). Two ways to get there:
+   - make `queue()` cancel the in-flight request and replace it with a fresh one instead of
+     silently no-op'ing (also incidentally fixes the `has()` vs `decodeURIComponent()` key
+     mismatch), or
+   - leave `queue()`'s no-op behavior alone and instead guard re-entry into the pipeline itself,
+     so the original in-flight request is left completely undisturbed to finish on its own.
 
 3. **Stop swallowing the rejection in `resolveHashChange()`**: wrap the `load(request).then(...)`
    chains (both the direct-component and dynamic-import branches) with `.catch()`/`.finally()`
@@ -107,8 +148,7 @@ that hash keeps hitting the same stale request.
 
 ## What we've done
 
-Only **fix 1** has been implemented so far, in `router.js`
-(`onRequestResolved`):
+**Fix 1** — in `router.js` (`onRequestResolved`):
 
 ```js
 if (getActivePage() && getActivePage() !== page && !request.isSharedInstance) {
@@ -116,8 +156,34 @@ if (getActivePage() && getActivePage() !== page && !request.isSharedInstance) {
 }
 ```
 
-This stops the crash itself. It does **not** address the underlying double-resolve: the rest
-of `onRequestResolved` (component storage, `emit('mounted'/'changed')`, widget updates,
-`afterEachRoute` — including page-view tracking) can still run twice for the same navigation,
-and duplicate page instances can still be created if a route's component gets constructed
-twice. Fixes 2, 3 and 5 remain open if that class of duplication needs to be closed too.
+This stops the crash itself, by refusing to clean up a page that's already the one being
+activated.
+
+**Fix 2** — implemented as the second option above: `queue()` in `../index.js` is untouched
+(still silently no-ops when a hash is already queued). Instead, the `Request` model
+(`../model/Request.js`) got a new `isDispatched` flag, defaulting to `false`. `handleHashChange()`
+(`../index.js`) sets it the first time a matched-route request is handed off to the async
+pipeline, right before the `beforeEachRoute` await:
+
+```js
+if (request.isDispatched) {
+  return
+}
+request.isDispatched = true
+```
+
+If `handleHashChange()` re-enters for the same request while it's still in flight (or after
+it's already resolved), it now returns immediately — no cancellation, no new request, no
+re-running of `beforeEachRoute`/`route.beforeNavigate`. The original in-flight request is left
+completely undisturbed to finish on its own, so it can no longer be double-dispatched into
+`resolveHashChange`/`load`. This closes the crash, the invisible-page bug, and the duplicate
+side effects (tracking, provider calls, orphaned component instances) described above, all from
+one guard, without changing `queue()`'s existing no-op semantics for a repeat navigation to an
+in-flight hash.
+
+Fixes 3 and 5 remain open:
+- Fix 3 (wrap `load(request).then(...)` in `resolveHashChange()` with `.catch()`/`.finally()`,
+  both branches) still matters on its own — any other unrelated throw in that chain (not just
+  this bug) would still leak the queue entry and wedge `Router.isNavigating()`.
+- Fix 5 (`handleHashChange()`'s auto-queue fallback can leave `request` `undefined`) is a
+  separate, narrower edge case, independent of the fixes above.

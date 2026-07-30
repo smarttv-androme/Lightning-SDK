@@ -68,6 +68,16 @@ export default class Request {
     this._cancelled = false
 
     /**
+     * Flag if this request has already been handed off to
+     * resolveHashChange()/load(). Prevents the same request from being
+     * processed a second time if handleHashChange() re-enters for the
+     * same still-in-flight hash (e.g. a duplicate hashchange event).
+     * @type {boolean}
+     * @private
+     */
+    this._dispatched = false
+
+    /**
      * if instance is shared between requests we copy state object
      * from instance before the new request overrides state
      * @type {null}
@@ -161,6 +171,14 @@ export default class Request {
 
   get isCancelled() {
     return this._cancelled
+  }
+
+  get isDispatched() {
+    return this._dispatched
+  }
+
+  set isDispatched(args) {
+    this._dispatched = args
   }
 
   set copiedHistoryState(v) {
