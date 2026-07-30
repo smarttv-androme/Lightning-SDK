@@ -367,7 +367,10 @@ export const onRequestResolved = request => {
   // we want to clean up if there is an
   // active page that is not being shared
   // between current and previous route
-  if (getActivePage() && !request.isSharedInstance) {
+  // note: getActivePage() can already equal `page` here if this request
+  // is being resolved a second time (e.g. after a double-load race), in
+  // which case cleaning up would remove the page we're about to activate
+  if (getActivePage() && getActivePage() !== page && !request.isSharedInstance) {
     cleanUp(activePage, request)
   }
 
