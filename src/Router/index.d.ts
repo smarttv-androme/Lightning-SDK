@@ -245,7 +245,7 @@ interface NavigateArgs {
 /**
  * Parameters from hash that end up in _onUrlParams and in other calls
  */
-interface PageParams extends Record<string, string | undefined> {
+interface PageParams extends Record<string, unknown> {
   /**
    * Query parameters (after the route hash path)
    */
@@ -807,12 +807,12 @@ declare namespace Router {
   /**
    * @deprecated Use {@link getActivePage}
    */
-  export function activePage(): Lightning.Component | null;
+  export function activePage(): PageInstance | null;
 
   /**
    * Returns the reference of the active Page instance
    */
-  export function getActivePage(): Lightning.Component | null;
+  export function getActivePage(): PageInstance | null;
 
   /**
    * Returns the reference of the active Page instance
@@ -981,7 +981,7 @@ declare namespace Router {
    * @example
    * Add the following somewhere in your project
    * ```ts
-   * declare module "@lightingjs/sdk" {
+   * declare module "@lightningjs/sdk" {
    *   namespace Router {
    *     interface CustomWidgets {
    *       Menu: typeof Menu;
