@@ -29,16 +29,16 @@ export { default as Launch } from './src/Launch/index.js';
 export { default as Lightning } from './src/Lightning/index.js';
 export const Locale: any; // export { default as Locale } from './src/Locale'
 export const Language: any; // export { default as Language } from './src/Language'
-export const Log: any; // export { default as Log } from './src/Log'
+export { default as Log } from './src/Log/index.js';
 export const MediaPlayer: any; // export { default as MediaPlayer } from './src/MediaPlayer'
 export const Metrics: any; // export { default as Metrics } from './src/Metrics'
 export const Pin: any; // export { default as Pin } from './src/Pin'
 export const Profile: any; // export { default as Profile } from './src/Profile'
 export const Purchase: any; // export { default as Purchase } from './src/Purchase'
-export const Registry: any; // export { default as Registry } from './src/Registry'
+export { default as Registry, TimeoutId, IntervalId } from './src/Registry/index.js';
 export { default as Router, RouterConfig, RouteMatchingStrategy } from './src/Router/index.js';
-export const Settings: any; // export { default as Settings } from './src/Settings'
-export const Storage: any; // export { default as Storage } from './src/Storage'
+export { default as Settings, SettingsType, SettingsSubscriber } from './src/Settings/index.js';
+export { default as Storage } from './src/Storage/index.js';
 export const TV: any; // export { default as TV } from './src/TV'
 export { default as Utils } from './src/Utils/index.js';
 export const VideoPlayer: any; // export { default as VideoPlayer } from './src/VideoPlayer'
