@@ -154,6 +154,8 @@ export default function(App, appData, platformSettings) {
         App.colors && this.loadColors(App.colors()),
       ])
         .then(() => {
+          if (this._destroyed) return // Stage/app was destroyed (e.g. Back pressed) while loading fonts, setup cannot continue. There is no context, canvas,... anymore
+
           Metrics.app.loaded()
 
           this.loadFontMetrics()
